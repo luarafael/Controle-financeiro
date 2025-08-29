@@ -35,6 +35,8 @@ input {
   padding: 8px;
   margin-right: 8px;
   margin-bottom: 10px;
+  width: 100%;
+  max-width: 250px;
 }
 
 button {
@@ -98,15 +100,4 @@ canvas {
   .graficos {
     grid-template-columns: 1fr 1fr;
   }
-}
-
-.grafico-duplo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: space-between;
-}
-.grafico-duplo .grafico-item {
-  flex: 1;
-  min-width: 300px;
 }

@@ -1,20 +1,11 @@
-// =====================
-// ESTADO
-// =====================
-let faturamento = JSON.parse(localStorage.getItem('faturamento')) || {}; // {0..6:[valores]}
-let despesas    = JSON.parse(localStorage.getItem('despesas'))    || [];  // [{desc,valor}]
+let faturamento = JSON.parse(localStorage.getItem('faturamento')) || {};
+let despesas    = JSON.parse(localStorage.getItem('despesas'))    || [];
 
 const nomesDias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 
-// =====================
-// UTIL
-// =====================
-function diaIndexHoje() { return new Date().getDay(); } // 0..6
+function diaIndexHoje() { return new Date().getDay(); }
 function toNumber(v, def=0) { const n = Number(v); return Number.isFinite(n) ? n : def; }
 
-// =====================
-// AÇÕES
-// =====================
 window.registrarFaturamento = function() {
   const v = toNumber(document.getElementById('valorFaturado').value);
   if (!v) return;
@@ -40,7 +31,7 @@ window.adicionarDespesa = function() {
   const desc = document.getElementById('descDespesa').value.trim();
   const val  = toNumber(document.getElementById('valorDespesa').value);
   if (!desc || !val) return;
-  despesas.push({ desc, valor: val });
+  despesas.push({ desc, valor: val, dia: diaIndexHoje() });
   document.getElementById('descDespesa').value = '';
   document.getElementById('valorDespesa').value = '';
   atualizarTudo();
@@ -66,9 +57,6 @@ window.resetarSemana = function() {
   atualizarTudo();
 }
 
-// =====================
-// TABELAS
-// =====================
 function atualizarTabelas() {
   const tbodyF = document.querySelector('#tabelaFaturamento tbody');
   tbodyF.innerHTML = '';
@@ -99,98 +87,10 @@ function atualizarTabelas() {
   });
 }
 
-// =====================
-// RESUMO + GRÁFICOS
-// =====================
 let graficoPizza = null;
 let graficoBarras = null;
-
-function atualizarResumoEGraficos() {
-  const metaSemanal = toNumber(document.getElementById('metaSemanal').value);
-  const ganhoHora   = toNumber(document.getElementById('ganhoHora').value);
-
-  const somaDia = i => Array.isArray(faturamento[i]) ? faturamento[i].reduce((a,b)=>a+toNumber(b),0) : 0;
-  const totalFaturado = Array.from({length:7}, (_,i)=> somaDia(i)).reduce((a,b)=>a+b,0);
-  const totalCustos   = despesas.map(d=>toNumber(d.valor)).reduce((a,b)=>a+b,0);
-  const lucro         = totalFaturado - totalCustos;
-
-  const hojeIdx = diaIndexHoje();
-  const diasRestantes = 7 - (hojeIdx === 0 ? 7 : hojeIdx);
-  const faltandoSemana = metaSemanal - totalFaturado;
-  const metaDiariaAjustada = diasRestantes > 0 ? (faltandoSemana / diasRestantes) : faltandoSemana;
-  const horasNecessarias = ganhoHora > 0 ? (metaDiariaAjustada / ganhoHora) : 0;
-  const progresso = metaSemanal > 0 ? (totalFaturado / metaSemanal) * 100 : 0;
-
-  // Resumo
-  document.getElementById('faturado').textContent = totalFaturado.toFixed(2);
-  document.getElementById('custos').textContent = totalCustos.toFixed(2);
-  document.getElementById('lucro').textContent = lucro.toFixed(2);
-  document.getElementById('metaSemanalResumo').textContent = metaSemanal.toFixed(2);
-  document.getElementById('metaDiaria').textContent = metaDiariaAjustada.toFixed(2);
-  document.getElementById('horasNecessarias').textContent = horasNecessarias.toFixed(1);
-  document.getElementById('progresso').textContent = progresso.toFixed(1);
-
-  // Gráfico pizza (progresso)
-  if (graficoPizza) graficoPizza.destroy();
-  const faltando = Math.max(metaSemanal - totalFaturado, 0);
-  graficoPizza = new Chart(document.getElementById('grafico'), {
-    plugins: [ChartDataLabels],
-    type: 'doughnut',
-    data: {
-      labels: ['Faturado', 'Falta para meta'],
-      datasets: [{
-        data: [totalFaturado, faltando],
-        backgroundColor: ['#16a34a', '#e5e7eb']
-      }]
-    },
-    options: {
-      responsive: true,
-      cutout: '70%',
-      animation: { animateRotate: true, animateScale: true },
-      plugins: { legend: { position: 'bottom' }, datalabels: { color: '#000', font: { weight: 'bold' }, formatter: (value) => `R$ ${value.toFixed(2)}` } }
-    }
-  });
-
-  // Gráfico barras (por dia)
-  if (graficoBarras) graficoBarras.destroy();
-  const ganhos = Array.from({length:7}, (_,i)=> somaDia(i));
-  graficoBarras = new Chart(document.getElementById('graficoBarras'), {
-    plugins: [ChartDataLabels],
-    type: 'bar',
-    data: {
-      labels: nomesDias,
-      datasets: [{
-        label: 'Ganhos (R$)',
-        data: ganhos,
-        backgroundColor: [
-          '#60a5fa','#34d399','#facc15','#f87171','#a78bfa','#f472b6','#4ade80'
-        ]
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: { duration: 800 },
-      plugins: { legend: { display: false }, datalabels: { color: '#000', font: { weight: 'bold' }, anchor: 'end', align: 'start', formatter: (value) => `R$ ${value.toFixed(2)}` } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-}
-
-// =====================
-// CICLO DE ATUALIZAÇÃO
-// =====================
-function atualizarTudo() {
-  atualizarTabelas();
-  atualizarResumoEGraficos();
-  localStorage.setItem('faturamento', JSON.stringify(faturamento));
-  localStorage.setItem('despesas', JSON.stringify(despesas));
-}
-
-// Inicializa
-document.addEventListener('DOMContentLoaded', atualizarTudo);
-
-
 let graficoDespesas = null;
+let graficoDespesasBarras = null;
 
 function atualizarResumoEGraficos() {
   const metaSemanal = toNumber(document.getElementById('metaSemanal').value);
@@ -208,7 +108,6 @@ function atualizarResumoEGraficos() {
   const horasNecessarias = ganhoHora > 0 ? (metaDiariaAjustada / ganhoHora) : 0;
   const progresso = metaSemanal > 0 ? (totalFaturado / metaSemanal) * 100 : 0;
 
-  // Resumo
   document.getElementById('faturado').textContent = totalFaturado.toFixed(2);
   document.getElementById('custos').textContent = totalCustos.toFixed(2);
   document.getElementById('lucro').textContent = lucro.toFixed(2);
@@ -217,77 +116,48 @@ function atualizarResumoEGraficos() {
   document.getElementById('horasNecessarias').textContent = horasNecessarias.toFixed(1);
   document.getElementById('progresso').textContent = progresso.toFixed(1);
 
-  // Gráfico pizza (progresso)
   if (graficoPizza) graficoPizza.destroy();
   const faltando = Math.max(metaSemanal - totalFaturado, 0);
   graficoPizza = new Chart(document.getElementById('grafico'), {
     type: 'doughnut',
     data: {
       labels: ['Faturado', 'Falta para meta'],
-      datasets: [{
-        data: [totalFaturado, faltando],
-        backgroundColor: ['#16a34a', '#e5e7eb']
-      }]
+      datasets: [{ data: [totalFaturado, faltando], backgroundColor: ['#16a34a', '#e5e7eb'] }]
     },
-    options: {
-      responsive: true,
-      cutout: '70%',
-      animation: { animateRotate: true, animateScale: true },
-      plugins: { legend: { position: 'bottom' }, datalabels: { color: '#000', font: { weight: 'bold' }, formatter: (value) => `R$ ${value.toFixed(2)}` } }
-    },
+    options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom' }, datalabels: { color: '#000', font: { weight: 'bold' }, formatter: (v) => `R$ ${v.toFixed(2)}` } } },
     plugins: [ChartDataLabels]
   });
 
-  // Gráfico barras (por dia)
   if (graficoBarras) graficoBarras.destroy();
   const ganhos = Array.from({length:7}, (_,i)=> somaDia(i));
   graficoBarras = new Chart(document.getElementById('graficoBarras'), {
     type: 'bar',
-    data: {
-      labels: nomesDias,
-      datasets: [{
-        label: 'Ganhos (R$)',
-        data: ganhos,
-        backgroundColor: [
-          '#60a5fa','#34d399','#facc15','#f87171','#a78bfa','#f472b6','#4ade80'
-        ]
-      }]
-    },
-    options: {
-      responsive: true,
-      animation: { duration: 800 },
-      plugins: { legend: { display: false }, datalabels: { color: '#000', font: { weight: 'bold' }, anchor: 'end', align: 'start', formatter: (value) => `R$ ${value.toFixed(2)}` } },
-      scales: { y: { beginAtZero: true } }
-    },
+    data: { labels: nomesDias, datasets: [{ label: 'Ganhos (R$)', data: ganhos, backgroundColor: ['#60a5fa','#34d399','#facc15','#f87171','#a78bfa','#f472b6','#4ade80'] }] },
+    options: { responsive: true, plugins: { legend: { display: false }, datalabels: { color: '#000', font: { weight: 'bold' }, anchor: 'end', align: 'start', formatter: (v) => `R$ ${v.toFixed(2)}` } }, scales: { y: { beginAtZero: true } } },
     plugins: [ChartDataLabels]
   });
 
-  // Gráfico pizza (despesas por categoria)
   if (graficoDespesas) graficoDespesas.destroy();
   if (despesas.length > 0) {
     const labels = despesas.map(d => d.desc);
     const valores = despesas.map(d => toNumber(d.valor));
     graficoDespesas = new Chart(document.getElementById('graficoDespesas'), {
       type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: valores,
-          backgroundColor: ['#f87171','#facc15','#34d399','#60a5fa','#a78bfa','#f472b6','#4ade80']
-        }]
-      },
-      options: {
-        responsive: true,
-        cutout: '60%',
-        plugins: { legend: { position: 'bottom' }, datalabels: { color: '#000', font: { weight: 'bold' }, formatter: (value) => `R$ ${value.toFixed(2)}` } }
-      },
+      data: { labels: labels, datasets: [{ data: valores, backgroundColor: ['#f87171','#facc15','#34d399','#60a5fa','#a78bfa','#f472b6','#4ade80'] }] },
+      options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' }, datalabels: { color: '#000', font: { weight: 'bold' }, formatter: (v) => `R$ ${v.toFixed(2)}` } } },
       plugins: [ChartDataLabels]
     });
   }
+
+  if (graficoDespesasBarras) graficoDespesasBarras.destroy();
+  const despesasPorDia = calcularDespesasPorDia();
+  graficoDespesasBarras = new Chart(document.getElementById('graficoDespesasBarras'), {
+    type: 'bar',
+    data: { labels: nomesDias, datasets: [{ label: 'Despesas (R$)', data: despesasPorDia, backgroundColor: ['#f87171','#fca5a5','#f87171','#fca5a5','#f87171','#fca5a5','#f87171'] }] },
+    options: { responsive: true, plugins: { legend: { display: false }, datalabels: { color: '#000', font: { weight: 'bold' }, anchor: 'end', align: 'start', formatter: (v) => `R$ ${v.toFixed(2)}` } }, scales: { y: { beginAtZero: true } } },
+    plugins: [ChartDataLabels]
+  });
 }
-
-
-let graficoDespesasBarras = null;
 
 function calcularDespesasPorDia() {
   const mapDias = {};
@@ -300,35 +170,11 @@ function calcularDespesasPorDia() {
   return Array.from({length:7}, (_,i)=> mapDias[i] || 0);
 }
 
-// Modificação na função adicionarDespesa para armazenar dia
-window.adicionarDespesa = function() {
-  const desc = document.getElementById('descDespesa').value.trim();
-  const val  = toNumber(document.getElementById('valorDespesa').value);
-  if (!desc || !val) return;
-  despesas.push({ desc, valor: val, dia: diaIndexHoje() });
-  document.getElementById('descDespesa').value = '';
-  document.getElementById('valorDespesa').value = '';
-  atualizarTudo();
+function atualizarTudo() {
+  atualizarTabelas();
+  atualizarResumoEGraficos();
+  localStorage.setItem('faturamento', JSON.stringify(faturamento));
+  localStorage.setItem('despesas', JSON.stringify(despesas));
 }
 
-// Inserir no final de atualizarResumoEGraficos
-if (graficoDespesasBarras) graficoDespesasBarras.destroy();
-const despesasPorDia = calcularDespesasPorDia();
-graficoDespesasBarras = new Chart(document.getElementById('graficoDespesasBarras'), {
-  type: 'bar',
-  data: {
-    labels: nomesDias,
-    datasets: [{
-      label: 'Despesas (R$)',
-      data: despesasPorDia,
-      backgroundColor: ['#f87171','#fca5a5','#f87171','#fca5a5','#f87171','#fca5a5','#f87171']
-    }]
-  },
-  options: {
-    responsive: true,
-    animation: { duration: 800 },
-    plugins: { legend: { display: false }, datalabels: { color: '#000', font: { weight: 'bold' }, anchor: 'end', align: 'start', formatter: (value) => `R$ ${value.toFixed(2)}` } },
-    scales: { y: { beginAtZero: true } }
-  },
-  plugins: [ChartDataLabels]
-});
+document.addEventListener('DOMContentLoaded', atualizarTudo);
