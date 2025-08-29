@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controle Financeiro Uber</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+</head>
+<body>
+  <header>
+    <h1>Controle Financeiro - Motorista</h1>
+  </header>
+
+  <main>
+    <section class="config">
+      <h2>Configurações</h2>
+      <label>Meta semanal (R$): 
+        <input type="number" id="metaSemanal" value="1400" step="0.01">
+      </label>
+      <label>Ganho por hora (R$): 
+        <input type="number" id="ganhoHora" value="20" step="0.01">
+      </label>
+    </section>
+
+    <section class="faturamento">
+      <h2>Lançar Faturamento Diário</h2>
+      <label>Faturamento de hoje (R$): 
+        <input type="number" id="valorFaturado" step="0.01">
+      </label>
+      <button onclick="registrarFaturamento()">Registrar valor</button>
+      <br><br>
+      <label>Horas trabalhadas hoje: 
+        <input type="number" id="horasTrabalhadas" step="0.1">
+      </label>
+      <button onclick="registrarHoras()">Registrar horas</button>
+
+      <table id="tabelaFaturamento">
+        <thead>
+          <tr><th>Dia</th><th>Valor (R$)</th><th>Ação</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <button onclick="resetarSemana()" class="btn-danger">Resetar Semana</button>
+    </section>
+
+    <section class="despesas">
+      <h2>Adicionar Despesa</h2>
+      <input type="text" id="descDespesa" placeholder="Descrição">
+      <input type="number" id="valorDespesa" placeholder="Valor (R$)" step="0.01">
+      <button onclick="adicionarDespesa()">Adicionar</button>
+
+      <table id="tabelaDespesas">
+        <thead>
+          <tr><th>Descrição</th><th>Valor (R$)</th><th>Ação</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="resumo">
+      <h2>Resumo</h2>
+      <p>Meta semanal: R$ <span id="metaSemanalResumo">0</span></p>
+      <p>Total faturado: R$ <span id="faturado">0</span></p>
+      <p>Total custos: R$ <span id="custos">0</span></p>
+      <p>Lucro líquido: R$ <span id="lucro">0</span></p>
+      <p>Meta diária ajustada: R$ <span id="metaDiaria">0</span></p>
+      <p>Horas necessárias hoje: <span id="horasNecessarias">0</span> h</p>
+      <p>Progresso semanal: <span id="progresso">0</span>%</p>
+    </section>
+
+    <section class="graficos">
+      <div class="grafico-item">
+        <h2>Gráfico de Progresso</h2>
+        <canvas id="grafico"></canvas>
+      </div>
+
+      <div class="grafico-item">
+        <h2>Ganhos por Dia da Semana</h2>
+        <canvas id="graficoBarras"></canvas>
+      </div>
+    </section>
+
+    <section class="graficos">
+      <div class="grafico-item">
+        <h2>Despesas por Categoria</h2>
+        <canvas id="graficoDespesas"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
